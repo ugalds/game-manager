@@ -58,7 +58,6 @@ const SavedGames: React.FC = () => {
       const response = await api.get('/matches');
       const data = response.data;
       
-      // Garante que os dados dos jogadores estejam completos
       const matchesWithPlayers = data.map((match: Match) => ({
         ...match,
         players: match.players.map(player => ({
@@ -71,74 +70,19 @@ const SavedGames: React.FC = () => {
       setMatches(matchesWithPlayers);
     } catch (error: any) {
       console.error('Erro ao carregar jogos:', error);
-      if (error.message === 'Network Error') {
-        setError('Não foi possível conectar ao servidor. Verifique se o servidor está rodando.');
-      } else if (error.response) {
-        setError(`Erro ao carregar jogos: ${error.response.data.message || 'Erro desconhecido'}`);
-      } else {
-        setError('Erro ao carregar jogos. Por favor, tente novamente.');
-      }
+      setError('Erro ao carregar jogos. Por favor, tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: number) => {
-    e.stopPropagation();
-    setGameToDelete(id);
-  };
-
-  const confirmDelete = async (id: number) => {
+  const handleDelete = async (id: number) => {
     try {
       await api.delete(`/matches/${id}`);
       await loadMatches();
-      setGameToDelete(null);
     } catch (error: any) {
       console.error('Erro ao deletar jogo:', error);
-      let errorMessage = 'Erro ao deletar jogo. Por favor, tente novamente.';
-      
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-      
-      setError(errorMessage);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getStatusIcon = (status: Match['status']) => {
-    switch (status) {
-      case 'pending':
-        return '⏳';
-      case 'in_progress':
-        return '🎮';
-      case 'finished':
-        return '🏆';
-      default:
-        return '❓';
-    }
-  };
-
-  const getStatusText = (status: Match['status']) => {
-    switch (status) {
-      case 'pending':
-        return 'Pendente';
-      case 'in_progress':
-        return 'Em Andamento';
-      case 'finished':
-        return 'Finalizado';
-      default:
-        return status;
+      setError('Erro ao deletar jogo. Por favor, tente novamente.');
     }
   };
 
@@ -152,26 +96,28 @@ const SavedGames: React.FC = () => {
           currentPlayer: match.players[0]?.id,
           startTime: new Date().toISOString()
         };
-
         await api.put(`/matches/${match.id}`, updatedMatch);
       }
-
       navigate(`/marker/${match.id}`);
     } catch (error: any) {
       console.error('Erro ao abrir jogo:', error);
-      let errorMessage = 'Erro ao abrir jogo. Por favor, tente novamente.';
-      
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-      
-      setError(errorMessage);
+      setError('Erro ao abrir jogo. Por favor, tente novamente.');
     }
+  };
+
+  const calculatePlayTime = (startTime?: string) => {
+    if (!startTime) return 0;
+    
+    const start = new Date(startTime);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60));
+    
+    return diffInHours;
   };
 
   if (loading) {
     return (
-      <div className="container">
+      <div className="saved-container">
         <div className="loading">
           <div className="spinner"></div>
           <p>Carregando jogos...</p>
@@ -187,110 +133,65 @@ const SavedGames: React.FC = () => {
           <img src="/crown-logo.png" alt="Logo" />
         </div>
         <nav className="nav-menu">
-          <button className="nav-item" onClick={() => navigate('/')}>Início</button>
+          <button className="nav-item" onClick={() => navigate('/')}>Inicio</button>
           <button className="nav-item" onClick={() => navigate('/players')}>Gamers</button>
           <button className="nav-item active">Salvos</button>
         </nav>
-        <button className="chat-button">💻</button>
       </header>
 
       <main className="saved-content">
         <div className="title-section">
           <h1>JOGOS SALVOS</h1>
-          <p>Retome suas partidas de onde parou</p>
+          <div className="title-actions">
+            <p>{matches.length.toString().padStart(2, '0')} JOGOS</p>
+            <button className="new-game-button" onClick={() => navigate('/create-game')}>
+              Novo Jogo
+            </button>
+          </div>
         </div>
 
-        <div className="saved-games-list">
+        <div className="saved-games-grid">
           {error && (
             <div className="error-message">
               <p>{error}</p>
-              <button onClick={loadMatches} className="retry-button">
-                Tentar Novamente
-              </button>
+              <button onClick={loadMatches}>Tentar Novamente</button>
             </div>
           )}
 
           {matches.length === 0 ? (
             <div className="empty-state">
               <p>Nenhum jogo salvo ainda</p>
-              <button onClick={() => navigate('/marker')} className="start-game-button">
-                Novo Jogo
-              </button>
             </div>
           ) : (
             matches.map((match) => (
-              <div 
-                key={match.id} 
-                className="game-card"
-                onClick={() => handleOpenGame(match)}
-              >
-                <div className="game-info">
-                  <div className="crown-icon">👑</div>
-                  <div className="game-text">
-                    <h2>{match.name}</h2>
-                    <p>Criado em: {formatDate(match.date)}</p>
-                    <div className="players-preview">
-                      {match.players.map((player, index) => (
-                        <span key={player.id} className="player-tag">
-                          {player.name}
-                          {index < match.players.length - 1 ? ', ' : ''}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+              <div key={match.id} className="game-card" onClick={() => handleOpenGame(match)}>
+                <div className="crown-icon">
+                  <img src="/crown-logo.png" alt="Crown" />
                 </div>
-                <div className="game-actions">
-                  <div className="status-badge" title={getStatusText(match.status)}>
-                    {getStatusIcon(match.status)}
-                    <span className="status-text">{getStatusText(match.status)}</span>
+                <h2>{match.name}</h2>
+                <p>{calculatePlayTime(match.startTime)} HORAS JOGADAS</p>
+                <div className="game-stats">
+                  <div className="stat">
+                    <img src="/avatar-placeholder.svg" alt="Player" className="player-avatar" />
+                    <span>{match.players.length.toString().padStart(2, '0')}</span>
                   </div>
-                  <div className="remove-game-container">
-                    <div 
-                      className="icon delete" 
-                      onClick={(e) => handleDelete(e, match.id)}
-                      title="Excluir jogo"
-                    >
-                      ✕
+                  <div className="stat">
+                    <div className="time-icon">
+                      <img src="/clock-icon.svg" alt="Time" />
                     </div>
-                    {gameToDelete === match.id && (
-                      <div className="remove-confirmation">
-                        <p>Excluir {match.name}?</p>
-                        <div className="confirmation-buttons">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              confirmDelete(match.id);
-                            }}
-                            className="confirm"
-                          >
-                            Sim
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setGameToDelete(null);
-                            }}
-                            className="cancel"
-                          >
-                            Não
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    <span>{match.round.toString().padStart(2, '0')}</span>
                   </div>
+                  <button className="delete-button" onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(match.id);
+                  }}>
+                    <img src="/delete-icon.svg" alt="Delete" />
+                  </button>
                 </div>
               </div>
             ))
           )}
         </div>
-
-        <button 
-          className="fab"
-          onClick={() => navigate('/marker')}
-          title="Criar Novo Jogo"
-        >
-          +
-        </button>
       </main>
     </div>
   );

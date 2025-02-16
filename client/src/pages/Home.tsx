@@ -32,7 +32,7 @@ const Home: React.FC = () => {
           </div>
 
           <div className="action-buttons">
-            <button className="start-game-button" onClick={() => navigate('/marker')}>
+            <button className="start-game-button" onClick={() => navigate('/create-game')}>
               Marcar
             </button>
             <button className="rules-button" onClick={() => navigate('/saved-games')}>
