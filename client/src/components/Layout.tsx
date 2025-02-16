@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box } from '@mui/material';
+import './Layout.css';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -7,16 +7,9 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <Box
-      component="main"
-      sx={{
-        flexGrow: 1,
-        p: 3,
-        width: '100%',
-      }}
-    >
+    <main className="main-layout">
       {children}
-    </Box>
+    </main>
   );
 };
 

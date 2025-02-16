@@ -163,9 +163,9 @@ const Players: React.FC = () => {
           <img src="/crown-logo.png" alt="Logo" />
         </div>
         <nav className="nav-menu">
-          <button className="nav-item">Início</button>
+          <button className="nav-item" onClick={() => navigate('/')}>Início</button>
           <button className="nav-item active">Gamers</button>
-          <button className="nav-item">Salvos</button>
+          <button className="nav-item" onClick={() => navigate('/saved-games')}>Salvos</button>
         </nav>
       </header>
 
@@ -192,63 +192,47 @@ const Players: React.FC = () => {
                   ➕
                 </button>
                 {showAddForm && (
-                  <div 
-                    className="add-player-form" 
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    <div className="player-form">
-                      <h2>NOVO JOGADOR</h2>
-                      <p className="form-subtitle">GAMER</p>
-                      <form onSubmit={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleSubmit(e);
-                      }}>
-                        <div className="form-group">
-                          <label>Avatar</label>
-                          <div className="avatar-options">
-                            {avatarOptions.map((avatar) => (
-                              <button
-                                key={avatar}
-                                type="button"
-                                className={`avatar-option ${formData.avatar === avatar ? 'selected' : ''}`}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setFormData({ ...formData, avatar });
-                                }}
-                              >
-                                {avatar}
-                              </button>
-                            ))}
-                          </div>
+                  <>
+                    <div className="modal-overlay" onClick={() => setShowAddForm(false)}>
+                      <div className="add-player-form" onClick={(e) => e.stopPropagation()}>
+                        <button className="close-modal-button" onClick={() => setShowAddForm(false)}>×</button>
+                        <div className="player-form">
+                          <h2>NOVO JOGADOR</h2>
+                          <p className="form-subtitle">GAMER</p>
+                          <form onSubmit={handleSubmit}>
+                            <div className="form-group">
+                              <label>Avatar</label>
+                              <div className="avatar-options">
+                                {avatarOptions.map((avatar) => (
+                                  <button
+                                    key={avatar}
+                                    type="button"
+                                    className={`avatar-option ${formData.avatar === avatar ? 'selected' : ''}`}
+                                    onClick={() => setFormData({ ...formData, avatar })}
+                                  >
+                                    {avatar}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Nome Jogador</label>
+                              <input
+                                type="text"
+                                placeholder="NOME JOGADOR"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                required
+                              />
+                            </div>
+                            <button type="submit" className="submit-button">
+                              Adicionar
+                            </button>
+                          </form>
                         </div>
-                        <div className="form-group">
-                          <label>Nome Jogador</label>
-                          <input
-                            type="text"
-                            placeholder="NOME JOGADOR"
-                            value={formData.name}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              setFormData({ ...formData, name: e.target.value });
-                            }}
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onClick={(e) => e.stopPropagation()}
-                            required
-                          />
-                        </div>
-                        <button 
-                          type="submit" 
-                          className="submit-button"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Adicionar
-                        </button>
-                      </form>
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -289,76 +273,58 @@ const Players: React.FC = () => {
                 </div>
               </div>
               <div className="modal-header-actions">
-                <div className="edit-button-container">
-                  <button 
-                    className="edit-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(selectedPlayer);
-                    }}
-                  >
-                    ✏️
-                  </button>
-                  {showEditForm && (
-                    <div 
-                      className="edit-form" 
-                      onClick={(e) => e.stopPropagation()}
-                      onMouseDown={(e) => e.stopPropagation()}
-                    >
-                      <div className="player-form">
-                        <h2>EDITAR JOGADOR</h2>
-                        <p className="form-subtitle">GAMER</p>
-                        <form onSubmit={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleEditSubmit(e);
-                        }}>
-                          <div className="form-group">
-                            <label>Avatar</label>
-                            <div className="avatar-options">
-                              {avatarOptions.map((avatar) => (
-                                <button
-                                  key={avatar}
-                                  type="button"
-                                  className={`avatar-option ${editFormData.avatar === avatar ? 'selected' : ''}`}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setEditFormData({ ...editFormData, avatar });
-                                  }}
-                                >
-                                  {avatar}
-                                </button>
-                              ))}
+                <button 
+                  className="edit-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(selectedPlayer);
+                  }}
+                >
+                  ✏️
+                </button>
+                {selectedPlayer && showEditForm && (
+                  <>
+                    <div className="modal-overlay" onClick={() => setShowEditForm(false)}>
+                      <div className="edit-form" onClick={(e) => e.stopPropagation()}>
+                        <button className="close-modal-button" onClick={() => setShowEditForm(false)}>×</button>
+                        <div className="player-form">
+                          <h2>EDITAR JOGADOR</h2>
+                          <p className="form-subtitle">GAMER {getPlayerPosition(selectedPlayer.id!)}</p>
+                          <form onSubmit={handleEditSubmit}>
+                            <div className="form-group">
+                              <label>Avatar</label>
+                              <div className="avatar-options">
+                                {avatarOptions.map((avatar) => (
+                                  <button
+                                    key={avatar}
+                                    type="button"
+                                    className={`avatar-option ${editFormData.avatar === avatar ? 'selected' : ''}`}
+                                    onClick={() => setEditFormData({ ...editFormData, avatar })}
+                                  >
+                                    {avatar}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                          <div className="form-group">
-                            <label>Nome Jogador</label>
-                            <input
-                              type="text"
-                              placeholder="NOME JOGADOR"
-                              value={editFormData.name}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                setEditFormData({ ...editFormData, name: e.target.value });
-                              }}
-                              onMouseDown={(e) => e.stopPropagation()}
-                              onClick={(e) => e.stopPropagation()}
-                              required
-                            />
-                          </div>
-                          <button 
-                            type="submit" 
-                            className="submit-button"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Salvar
-                          </button>
-                        </form>
+                            <div className="form-group">
+                              <label>Nome Jogador</label>
+                              <input
+                                type="text"
+                                placeholder="NOME JOGADOR"
+                                value={editFormData.name}
+                                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                required
+                              />
+                            </div>
+                            <button type="submit" className="submit-button">
+                              Salvar Alterações
+                            </button>
+                          </form>
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
                 <div className="delete-button-container">
                   <button 
                     className="delete-button"

@@ -181,107 +181,117 @@ const SavedGames: React.FC = () => {
   }
 
   return (
-    <div className="container">
-      <div className="header">
-        <h1>Jogos Salvos ({matches.length})</h1>
-        <div className="tabs">
-          <div className="tab" onClick={() => navigate('/')}>Início</div>
-          <div className="tab" onClick={() => navigate('/players')}>Gamers</div>
-          <div className="tab active">Salvos</div>
+    <div className="saved-container">
+      <header className="app-header">
+        <div className="logo">
+          <img src="/crown-logo.png" alt="Logo" />
         </div>
-      </div>
+        <nav className="nav-menu">
+          <button className="nav-item" onClick={() => navigate('/')}>Início</button>
+          <button className="nav-item" onClick={() => navigate('/players')}>Gamers</button>
+          <button className="nav-item active">Salvos</button>
+        </nav>
+        <button className="chat-button">💻</button>
+      </header>
 
-      {error && (
-        <div className="error-message">
-          <p>{error}</p>
-          <button onClick={loadMatches} className="retry-button">
-            Tentar Novamente
-          </button>
+      <main className="saved-content">
+        <div className="title-section">
+          <h1>JOGOS SALVOS</h1>
+          <p>Retome suas partidas de onde parou</p>
         </div>
-      )}
 
-      <div className="game-list">
-        {matches.length === 0 ? (
-          <div className="no-games">
-            <p>Nenhum jogo salvo encontrado</p>
-            <button onClick={() => navigate('/create-game')} className="create-game-button">
-              Criar Novo Jogo
-            </button>
-          </div>
-        ) : (
-          matches.map((match) => (
-            <div 
-              key={match.id} 
-              className="game-card"
-              onClick={() => handleOpenGame(match)}
-            >
-              <div className="game-info">
-                <div className="crown-icon">👑</div>
-                <div className="game-text">
-                  <h2>{match.name}</h2>
-                  <p>Criado em: {formatDate(match.date)}</p>
-                  <div className="players-preview">
-                    {match.players.map((player, index) => (
-                      <span key={player.id} className="player-tag">
-                        {player.name}
-                        {index < match.players.length - 1 ? ', ' : ''}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="game-actions">
-                <div className="status-badge" title={getStatusText(match.status)}>
-                  {getStatusIcon(match.status)}
-                  <span className="status-text">{getStatusText(match.status)}</span>
-                </div>
-                <div className="remove-game-container">
-                  <div 
-                    className="icon delete" 
-                    onClick={(e) => handleDelete(e, match.id)}
-                    title="Excluir jogo"
-                  >
-                    ✕
-                  </div>
-                  {gameToDelete === match.id && (
-                    <div className="remove-confirmation">
-                      <p>Excluir {match.name}?</p>
-                      <div className="confirmation-buttons">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            confirmDelete(match.id);
-                          }}
-                          className="confirm"
-                        >
-                          Sim
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setGameToDelete(null);
-                          }}
-                          className="cancel"
-                        >
-                          Não
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+        <div className="saved-games-list">
+          {error && (
+            <div className="error-message">
+              <p>{error}</p>
+              <button onClick={loadMatches} className="retry-button">
+                Tentar Novamente
+              </button>
             </div>
-          ))
-        )}
-      </div>
+          )}
 
-      <button 
-        className="fab"
-        onClick={() => navigate('/create-game')}
-        title="Criar Novo Jogo"
-      >
-        +
-      </button>
+          {matches.length === 0 ? (
+            <div className="empty-state">
+              <p>Nenhum jogo salvo ainda</p>
+              <button onClick={() => navigate('/players')} className="start-game-button">
+                Iniciar Novo Jogo
+              </button>
+            </div>
+          ) : (
+            matches.map((match) => (
+              <div 
+                key={match.id} 
+                className="game-card"
+                onClick={() => handleOpenGame(match)}
+              >
+                <div className="game-info">
+                  <div className="crown-icon">👑</div>
+                  <div className="game-text">
+                    <h2>{match.name}</h2>
+                    <p>Criado em: {formatDate(match.date)}</p>
+                    <div className="players-preview">
+                      {match.players.map((player, index) => (
+                        <span key={player.id} className="player-tag">
+                          {player.name}
+                          {index < match.players.length - 1 ? ', ' : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="game-actions">
+                  <div className="status-badge" title={getStatusText(match.status)}>
+                    {getStatusIcon(match.status)}
+                    <span className="status-text">{getStatusText(match.status)}</span>
+                  </div>
+                  <div className="remove-game-container">
+                    <div 
+                      className="icon delete" 
+                      onClick={(e) => handleDelete(e, match.id)}
+                      title="Excluir jogo"
+                    >
+                      ✕
+                    </div>
+                    {gameToDelete === match.id && (
+                      <div className="remove-confirmation">
+                        <p>Excluir {match.name}?</p>
+                        <div className="confirmation-buttons">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDelete(match.id);
+                            }}
+                            className="confirm"
+                          >
+                            Sim
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setGameToDelete(null);
+                            }}
+                            className="cancel"
+                          >
+                            Não
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <button 
+          className="fab"
+          onClick={() => navigate('/create-game')}
+          title="Criar Novo Jogo"
+        >
+          +
+        </button>
+      </main>
     </div>
   );
 };

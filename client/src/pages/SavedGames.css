@@ -304,4 +304,108 @@
 .confirmation-buttons .cancel:hover {
   background: #e0e0e0;
   transform: translateY(-1px);
+}
+
+.saved-container {
+  height: calc(100vh - 60px);
+  background: #E5E5E5;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  margin: 30px;
+  overflow: hidden;
+  position: relative;
+}
+
+.saved-content {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 20px;
+}
+
+.title-section {
+  margin-bottom: 40px;
+}
+
+.title-section h1 {
+  font-size: 32px;
+  margin: 0;
+  color: #333;
+}
+
+.title-section p {
+  font-size: 16px;
+  color: #666;
+  margin: 8px 0 0 0;
+}
+
+.saved-games-list {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  color: #666;
+}
+
+.empty-state p {
+  font-size: 18px;
+  margin: 0;
+}
+
+.start-game-button {
+  padding: 15px 40px;
+  background: #fff;
+  border: none;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+}
+
+.start-game-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+  .saved-container {
+    height: calc(100vh - 30px);
+    margin: 15px;
+    padding: 15px;
+    border-radius: 16px;
+  }
+
+  .saved-content {
+    padding: 10px;
+  }
+
+  .title-section h1 {
+    font-size: 24px;
+  }
+
+  .title-section p {
+    font-size: 14px;
+  }
+
+  .saved-games-list {
+    padding: 16px;
+  }
 } 
