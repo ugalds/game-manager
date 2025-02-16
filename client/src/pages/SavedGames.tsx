@@ -214,7 +214,7 @@ const SavedGames: React.FC = () => {
             <div className="empty-state">
               <p>Nenhum jogo salvo ainda</p>
               <button onClick={() => navigate('/marker')} className="start-game-button">
-                Iniciar Novo Jogo
+                Novo Jogo
               </button>
             </div>
           ) : (

@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Players from './pages/Players';
 import SavedGames from './pages/SavedGames';
 import Marker from './pages/Marker';
+import CreateGame from './pages/CreateGame';
 
 const App: React.FC = () => {
   return (
@@ -30,6 +31,7 @@ const AppContent: React.FC = () => {
           <Route path="/saved-games" element={<SavedGames />} />
           <Route path="/marker" element={<Marker />} />
           <Route path="/marker/:id" element={<Marker />} />
+          <Route path="/create-game" element={<CreateGame />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </CSSTransition>
