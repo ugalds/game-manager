@@ -4,10 +4,13 @@ import { QueryTypes } from 'sequelize';
 
 class PlayerController {
   index = async (req: Request, res: Response) => {
+    console.log('Recebida requisição GET /players');
     try {
+      console.log('Buscando jogadores no banco de dados...');
       const players = await Player.findAll({
         order: [['id', 'ASC']]
       });
+      console.log(`Encontrados ${players.length} jogadores`);
       return res.json(players);
     } catch (error) {
       console.error('Erro ao listar jogadores:', error);
@@ -16,10 +19,13 @@ class PlayerController {
   }
 
   store = async (req: Request, res: Response) => {
+    console.log('Recebida requisição POST /players');
     try {
       const { name, avatar, points = 0, victories = 0, rounds = 0, general = 0, riscos = 0 } = req.body;
+      console.log('Dados recebidos:', { name, avatar, points, victories, rounds, general, riscos });
       
       if (!name || !avatar) {
+        console.log('Erro: Nome e avatar são obrigatórios');
         return res.status(400).json({ error: 'Nome e avatar são obrigatórios' });
       }
 
@@ -29,6 +35,7 @@ class PlayerController {
       });
 
       const nextId = lastPlayer ? lastPlayer.id + 1 : 1;
+      console.log('Próximo ID:', nextId);
 
       const player = await Player.create({ 
         id: nextId,
@@ -41,6 +48,7 @@ class PlayerController {
         riscos
       });
       
+      console.log('Jogador criado com sucesso:', player.toJSON());
       return res.status(201).json(player);
     } catch (error) {
       console.error('Erro ao criar jogador:', error);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import './Marker.css';
+import api from '../config/api';
 
 interface Player {
   id: number;
@@ -188,22 +189,41 @@ const Marker: React.FC = (): JSX.Element => {
   const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
   const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    if (id) {
+      fetchMatch();
+    } else {
+      createNewMatch();
+    }
+  }, [id]);
+
+  const createNewMatch = async () => {
+    try {
+      const newMatch = {
+        name: `Partida ${new Date().toLocaleDateString()}`,
+        date: new Date().toISOString(),
+        status: 'pending',
+        players: [],
+        round: 1
+      };
+
+      const response = await api.post('/matches', newMatch);
+      const createdMatch = response.data;
+      navigate(`/marker/${createdMatch.id}`);
+    } catch (error) {
+      console.error('Erro ao criar nova partida:', error);
+      alert('Erro ao criar nova partida. Por favor, tente novamente.');
+    }
+  };
+
   const fetchMatch = async () => {
     try {
-      const response = await fetch(`http://localhost:3002/api/matches/${id}`);
-      if (!response.ok) {
-        throw new Error('Erro ao carregar partida');
-      }
-      
-      const matchData = await response.json();
+      const response = await api.get(`/matches/${id}`);
+      const matchData = response.data;
       
       // Buscar dados completos dos jogadores
-      const playersResponse = await fetch('http://localhost:3002/api/players');
-      if (!playersResponse.ok) {
-        throw new Error('Erro ao carregar jogadores');
-      }
-      
-      const allPlayers = await playersResponse.json();
+      const playersResponse = await api.get('/players');
+      const allPlayers = playersResponse.data;
       
       // Mapear os jogadores da partida mantendo as pontuações existentes
       if (matchData.players) {
@@ -230,16 +250,10 @@ const Marker: React.FC = (): JSX.Element => {
         matchData.start_time = now;
         matchData.status = 'in_progress';
         
-        await fetch(`http://localhost:3002/api/matches/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            ...matchData,
-            status: 'in_progress',
-            start_time: now
-          }),
+        await api.put(`/matches/${id}`, { 
+          ...matchData,
+          status: 'in_progress',
+          start_time: now
         });
       }
       
@@ -274,16 +288,12 @@ const Marker: React.FC = (): JSX.Element => {
   const fetchAvailablePlayers = async () => {
     try {
       // Busca todos os jogadores do banco de dados
-      const response = await fetch('http://localhost:3002/api/players');
-      if (!response.ok) {
-        throw new Error('Erro ao buscar jogadores');
-      }
-      
-      const allPlayers = await response.json();
+      const response = await api.get('/players');
+      const allPlayers = response.data;
       
       // Filtra os jogadores que já estão na partida
       const availablePlayers = allPlayers.filter((player: Player) => {
-        return !match?.players.some(matchPlayer => matchPlayer.id === player.id);
+        return !match?.players?.some(matchPlayer => matchPlayer.id === player.id);
       });
       
       // Ordena os jogadores por nome
@@ -300,205 +310,27 @@ const Marker: React.FC = (): JSX.Element => {
     }
   };
 
-  const initializeMatch = async () => {
-    try {
-      const response = await fetch(`http://localhost:3002/api/matches/${id}`);
-      if (!response.ok) {
-        throw new Error('Erro ao carregar partida');
-      }
-      
-      const matchData = await response.json();
-      
-      // Buscar dados completos dos jogadores
-      const playersResponse = await fetch('http://localhost:3002/api/players');
-      if (!playersResponse.ok) {
-        throw new Error('Erro ao carregar jogadores');
-      }
-      
-      const allPlayers = await playersResponse.json();
-      
-      // Mapear os jogadores da partida mantendo as pontuações existentes
-      if (matchData.players) {
-        matchData.players = matchData.players
-          .filter((matchPlayer: any) => {
-            return allPlayers.some((p: Player) => p.id === matchPlayer.id);
-          })
-          .map((matchPlayer: any) => {
-            const fullPlayer = allPlayers.find((p: Player) => p.id === matchPlayer.id);
-            
-            return {
-              id: matchPlayer.id,
-              name: fullPlayer.name,
-              avatar: fullPlayer.avatar,
-              points: matchPlayer.points || 0,
-              categories: matchPlayer.categories || {}
-            };
-          });
-      }
-      
-      // Se a partida estiver pendente ou não tiver start_time, inicia o timer
-      if (matchData.status === 'pending' || !matchData.start_time) {
-        const now = new Date().toISOString();
-        matchData.start_time = now;
-        matchData.status = 'in_progress';
-        
-        await fetch(`http://localhost:3002/api/matches/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            ...matchData,
-            status: 'in_progress',
-            start_time: now
-          }),
-        });
-      }
-
-      // Sempre inicia o timer com o start_time existente ou o novo
-      if (matchData.start_time) {
-        startTimer(matchData.start_time);
-      }
-      
-      // Seleciona o primeiro jogador se houver jogadores
-      const firstPlayer = matchData.players && matchData.players.length > 0 ? matchData.players[0] : null;
-      
-      // Atualiza o estado do match com todos os dados necessários
-      setMatch({
-        ...matchData,
-        round: matchData.round || 1,
-        current_player: firstPlayer ? firstPlayer.id : matchData.current_player,
-        players: matchData.players || [],
-        start_time: matchData.start_time // Garante que o start_time seja mantido
-      });
-
-      // Sempre seleciona o primeiro jogador ao inicializar
-      if (firstPlayer) {
-        setCurrentPlayer(firstPlayer);
-      }
-      
-      return matchData;
-    } catch (error) {
-      console.error('Erro ao carregar partida:', error);
-      alert('Erro ao carregar partida. Por favor, tente novamente.');
-      return null;
-    }
-  };
-
   useEffect(() => {
-    const initializeMatch = async () => {
-      try {
-        const response = await fetch(`http://localhost:3002/api/matches/${id}`);
-        if (!response.ok) {
-          throw new Error('Erro ao carregar partida');
-        }
-        
-        const matchData = await response.json();
-        
-        // Buscar dados completos dos jogadores
-        const playersResponse = await fetch('http://localhost:3002/api/players');
-        if (!playersResponse.ok) {
-          throw new Error('Erro ao carregar jogadores');
-        }
-        
-        const allPlayers = await playersResponse.json();
-        
-        // Mapear os jogadores da partida mantendo as pontuações existentes
-        if (matchData.players) {
-          matchData.players = matchData.players
-            .filter((matchPlayer: any) => {
-              return allPlayers.some((p: Player) => p.id === matchPlayer.id);
-            })
-            .map((matchPlayer: any) => {
-              const fullPlayer = allPlayers.find((p: Player) => p.id === matchPlayer.id);
-              
-              return {
-                id: matchPlayer.id,
-                name: fullPlayer.name,
-                avatar: fullPlayer.avatar,
-                points: matchPlayer.points || 0,
-                categories: matchPlayer.categories || {}
-              };
-            });
-        }
-
-        // Se a partida estiver pendente ou não tiver start_time, inicia o timer
-        if (matchData.status === 'pending' || !matchData.start_time) {
-          const now = new Date().toISOString();
-          matchData.start_time = now;
-          matchData.status = 'in_progress';
-          
-          await fetch(`http://localhost:3002/api/matches/${id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              ...matchData,
-              status: 'in_progress',
-              start_time: now
-            }),
-          });
-        }
-
-        // Sempre inicia o timer com o start_time existente ou o novo
-        if (matchData.start_time) {
-          startTimer(matchData.start_time);
-        }
-
-        // Seleciona o primeiro jogador se houver jogadores
-        const firstPlayer = matchData.players && matchData.players.length > 0 ? matchData.players[0] : null;
-        
-        // Atualiza o estado do match com todos os dados necessários
-        setMatch({
-          ...matchData,
-          round: matchData.round || 1,
-          current_player: firstPlayer ? firstPlayer.id : matchData.current_player,
-          players: matchData.players || [],
-          start_time: matchData.start_time // Garante que o start_time seja mantido
-        });
-
-        // Sempre seleciona o primeiro jogador ao inicializar
-        if (firstPlayer) {
-          setCurrentPlayer(firstPlayer);
-        }
-        
-        return matchData;
-      } catch (error) {
-        console.error('Erro ao carregar partida:', error);
-        alert('Erro ao carregar partida. Por favor, tente novamente.');
-        return null;
-      }
-    };
-
-    initializeMatch();
-
-    // Configura o intervalo para recarregar dados
-    const interval = setInterval(() => {
-      if (!isFirstLoad) { // Só atualiza periodicamente após a primeira carga
-        fetchMatch();
-      }
-    }, 5000);
-
-    return () => {
-      clearInterval(interval);
-      if (timer) {
-        clearInterval(timer);
-      }
-    };
+    if (id) {
+      fetchMatch();
+    } else {
+      createNewMatch();
+    }
   }, [id]);
 
-  // Adiciona um useEffect para carregar os jogadores quando o componente montar
+  // Efeito separado para carregar jogadores disponíveis
   useEffect(() => {
-    fetchAvailablePlayers();
-  }, []); // Executa apenas uma vez ao montar o componente
+    if (match) {
+      fetchAvailablePlayers();
+    }
+  }, [match?.players]);
 
-  // Adiciona um useEffect para atualizar a lista quando os jogadores da partida mudarem
+  // Efeito para atualizar a lista quando o modal de adicionar jogador for aberto
   useEffect(() => {
     if (showAddPlayerModal) {
       fetchAvailablePlayers();
     }
-  }, [showAddPlayerModal, match?.players]);
+  }, [showAddPlayerModal]);
 
   // Adiciona useEffect para verificar se todos os marcadores estão preenchidos
   useEffect(() => {
@@ -514,6 +346,22 @@ const Marker: React.FC = (): JSX.Element => {
       setTimer(null);
     }
   }, [showEndGameModal]);
+
+  // Efeito para recarregar dados periodicamente
+  useEffect(() => {
+    if (id && !isFirstLoad) {
+      const interval = setInterval(() => {
+        fetchMatch();
+      }, 5000);
+
+      return () => {
+        clearInterval(interval);
+        if (timer) {
+          clearInterval(timer);
+        }
+      };
+    }
+  }, [id, isFirstLoad]);
 
   const handleClose = async () => {
     if (!match) return;
@@ -533,17 +381,11 @@ const Marker: React.FC = (): JSX.Element => {
       }));
 
       // Atualiza o status da partida para in_progress e zera as pontuações
-      await fetch(`http://localhost:3002/api/matches/${match.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...match,
-          status: 'in_progress',
-          players: updatedPlayers,
-          start_time: match.start_time // Mantém o start_time original
-        }),
+      await api.put(`/matches/${match.id}`, {
+        ...match,
+        status: 'in_progress',
+        players: updatedPlayers,
+        start_time: match.start_time // Mantém o start_time original
       });
 
       // Redireciona para a lista de jogos salvos
@@ -567,24 +409,14 @@ const Marker: React.FC = (): JSX.Element => {
       const updatedPlayers = match.players.filter(p => p.id !== playerId);
       
       // Atualiza no banco de dados apenas a lista de jogadores da partida
-      const response = await fetch(`http://localhost:3002/api/matches/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...match,
-          players: updatedPlayers.map(p => ({
-            id: p.id,
-            points: p.points || 0,
-            categories: p.categories || {}
-          }))
-        }),
+      await api.put(`/matches/${id}`, {
+        ...match,
+        players: updatedPlayers.map(p => ({
+          id: p.id,
+          points: p.points || 0,
+          categories: p.categories || {}
+        }))
       });
-
-      if (!response.ok) {
-        throw new Error('Erro ao remover jogador da partida');
-      }
 
       // Atualiza o estado local
       setMatch({
@@ -633,24 +465,14 @@ const Marker: React.FC = (): JSX.Element => {
       });
 
       // Atualiza no banco de dados
-      const response = await fetch(`http://localhost:3002/api/matches/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...match,
-          players: updatedPlayers.map(p => ({
-            id: p.id,
-            points: p.points || 0,
-            categories: p.categories || {}
-          }))
-        }),
+      await api.put(`/matches/${id}`, {
+        ...match,
+        players: updatedPlayers.map(p => ({
+          id: p.id,
+          points: p.points || 0,
+          categories: p.categories || {}
+        }))
       });
-
-      if (!response.ok) {
-        throw new Error('Erro ao adicionar jogador à partida');
-      }
       
       // Recarrega os dados da partida
       await fetchMatch();
@@ -668,29 +490,12 @@ const Marker: React.FC = (): JSX.Element => {
     try {
       let response;
       if (isEditing) {
-        response = await fetch(`http://localhost:3002/api/players/${playerFormData.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(playerFormData),
-        });
+        response = await api.put(`/players/${playerFormData.id}`, playerFormData);
       } else {
-        response = await fetch('http://localhost:3002/api/players', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(playerFormData),
-        });
+        response = await api.post('/players', playerFormData);
       }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao salvar jogador');
-      }
-
-      const savedPlayer = await response.json();
+      const savedPlayer = response.data;
       
       // Se não estiver editando, adiciona o jogador à partida
       if (!isEditing) {
@@ -726,9 +531,7 @@ const Marker: React.FC = (): JSX.Element => {
   const handleDeletePlayer = async (playerId: number) => {
     try {
       // Primeiro, exclui o jogador da API
-      await fetch(`http://localhost:3002/api/players/${playerId}`, {
-        method: 'DELETE',
-      });
+      await api.delete(`/players/${playerId}`);
 
       // Atualiza a lista de jogadores disponíveis
       await fetchAvailablePlayers();
@@ -766,19 +569,13 @@ const Marker: React.FC = (): JSX.Element => {
       setMatch(updatedMatch);
 
       // Atualiza no banco de dados
-      await fetch(`http://localhost:3002/api/matches/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...updatedMatch,
-          players: updatedMatch.players.map(p => ({
-            id: p.id,
-            points: p.points,
-            categories: p.categories
-          }))
-        }),
+      await api.put(`/matches/${id}`, {
+        ...updatedMatch,
+        players: updatedMatch.players.map(p => ({
+          id: p.id,
+          points: p.points,
+          categories: p.categories
+        }))
       });
 
     } catch (error) {
@@ -826,13 +623,8 @@ const Marker: React.FC = (): JSX.Element => {
   const savePlayerStats = async (player: Player, isWinner: boolean) => {
     try {
       // Busca os dados atuais do jogador
-      const response = await fetch(`http://localhost:3002/api/players/${player.id}`);
-      
-      if (!response.ok) {
-        throw new Error('Erro ao buscar jogador');
-      }
-
-      const currentPlayer = await response.json();
+      const response = await api.get(`/players/${player.id}`);
+      const currentPlayer = response.data;
 
       // Calcula as estatísticas
       const generalCount = Object.entries(player.categories || {}).filter(([category, points]) => 
@@ -857,17 +649,7 @@ const Marker: React.FC = (): JSX.Element => {
       };
 
       // Tenta atualizar as estatísticas
-      const updateResponse = await fetch(`http://localhost:3002/api/players/${player.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedPlayer),
-      });
-
-      if (!updateResponse.ok) {
-        throw new Error('Erro ao atualizar estatísticas');
-      }
+      await api.put(`/players/${player.id}`, updatedPlayer);
 
     } catch (error) {
       console.error('Erro ao salvar estatísticas:', error);
@@ -923,24 +705,14 @@ const Marker: React.FC = (): JSX.Element => {
       setCurrentPlayer(updatedPlayer);
 
       // Atualiza o estado da partida no banco de dados
-      const response = await fetch(`http://localhost:3002/api/matches/${match.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...match,
-          players: updatedPlayers.map(p => ({
-            id: p.id,
-            points: p.points,
-            categories: p.categories
-          }))
-        }),
+      await api.put(`/matches/${match.id}`, {
+        ...match,
+        players: updatedPlayers.map(p => ({
+          id: p.id,
+          points: p.points,
+          categories: p.categories
+        }))
       });
-
-      if (!response.ok) {
-        throw new Error('Erro ao atualizar pontuação');
-      }
       
       // Verifica se é general de boca ou se todos os botões foram preenchidos
       if (checkGeneralBoca(currentPlayer.id, selectedCategory, points) || 
@@ -1000,34 +772,24 @@ const Marker: React.FC = (): JSX.Element => {
         categories: {}
       }));
 
-      // Primeiro atualiza o banco de dados mantendo o start_time original
-      const response = await fetch(`http://localhost:3002/api/matches/${match.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: match.id,
-          name: match.name,
-          status: 'in_progress',
-          current_player: updatedPlayers[0].id,
-          players: updatedPlayers,
-          round: (match.round || 1) + 1, // Incrementa o número da rodada
-          start_time: match.start_time // Mantém o start_time original
-        }),
+      // Atualiza o banco de dados mantendo o start_time original
+      await api.put(`/matches/${match.id}`, {
+        id: match.id,
+        name: match.name,
+        status: 'in_progress',
+        current_player: updatedPlayers[0].id,
+        players: updatedPlayers,
+        round: (match.round || 1) + 1,
+        start_time: match.start_time
       });
 
-      if (!response.ok) {
-        throw new Error('Erro ao reiniciar o jogo');
-      }
-
-      // Depois atualiza o estado local mantendo o start_time
+      // Atualiza o estado local mantendo o start_time
       setMatch({
         ...match,
         players: updatedPlayers,
         current_player: updatedPlayers[0].id,
         status: 'in_progress',
-        round: (match.round || 1) + 1 // Incrementa o número da rodada
+        round: (match.round || 1) + 1
       });
       setCurrentPlayer(updatedPlayers[0]);
       setShowEndGameModal(false);
@@ -1073,18 +835,12 @@ const Marker: React.FC = (): JSX.Element => {
       }));
 
       // Atualiza o status da partida para finalizada e zera as pontuações
-      await fetch(`http://localhost:3002/api/matches/${match.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...match,
-          status: 'finished',
-          players: updatedPlayers,
-          round: (match.round || 1) + 1,
-          start_time: match.start_time // Mantém o start_time original
-        }),
+      await api.put(`/matches/${match.id}`, {
+        ...match,
+        status: 'finished',
+        players: updatedPlayers,
+        round: (match.round || 1) + 1,
+        start_time: match.start_time // Mantém o start_time original
       });
 
       // Redireciona para a lista de jogos salvos
@@ -1195,11 +951,7 @@ const Marker: React.FC = (): JSX.Element => {
   }, [playerToDeleteFromList]);
 
   // Função para formatar o tempo decorrido
-  const formatElapsedTime = (startTime: string): string => {
-    const start = new Date(startTime).getTime();
-    const now = new Date().getTime();
-    const elapsed = Math.max(0, now - start);
-
+  const formatTime = (elapsed: number): string => {
     const hours = Math.floor(elapsed / (1000 * 60 * 60));
     const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
@@ -1219,11 +971,11 @@ const Marker: React.FC = (): JSX.Element => {
     }
     
     // Atualiza imediatamente o tempo decorrido
-    setElapsedTime(formatElapsedTime(startTime));
+    setElapsedTime(formatTime(new Date(startTime).getTime()));
     
     // Configura o intervalo para atualizar a cada segundo
     const interval = setInterval(() => {
-      setElapsedTime(formatElapsedTime(startTime));
+      setElapsedTime(formatTime(new Date().getTime()));
     }, 1000);
     
     setTimer(interval);

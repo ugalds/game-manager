@@ -89,32 +89,38 @@ module.exports = {
       },
       date: {
         type: DataTypes.DATE,
-        allowNull: true,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
       },
       status: {
         type: DataTypes.STRING,
+        allowNull: false,
         defaultValue: 'pending',
+        validate: {
+          isIn: [['pending', 'in_progress', 'finished']]
+        }
       },
       players: {
         type: DataTypes.JSONB,
-        allowNull: true,
-        defaultValue: [],
+        allowNull: false,
+        defaultValue: []
       },
       current_player: {
         type: DataTypes.INTEGER,
-        allowNull: true,
+        allowNull: true
       },
       round: {
         type: DataTypes.INTEGER,
-        defaultValue: 1,
+        allowNull: false,
+        defaultValue: 1
       },
       winner: {
         type: DataTypes.INTEGER,
-        allowNull: true,
+        allowNull: true
       },
       start_time: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: true
       },
       created_at: {
         type: DataTypes.DATE,

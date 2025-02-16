@@ -5,7 +5,7 @@ interface Player {
   id: number;
   name: string;
   avatar: string;
-  points: number;
+  points?: number;
   categories?: { [key: string]: number };
 }
 
@@ -13,7 +13,7 @@ class Match extends Model {
   public id!: number;
   public name!: string;
   public date!: Date;
-  public status!: string;
+  public status!: 'pending' | 'in_progress' | 'finished';
   public players!: Player[];
   public currentPlayer?: number;
   public round!: number;

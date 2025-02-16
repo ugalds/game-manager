@@ -4,6 +4,7 @@ import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import Home from './pages/Home';
 import Players from './pages/Players';
 import SavedGames from './pages/SavedGames';
+import Marker from './pages/Marker';
 
 const App: React.FC = () => {
   return (
@@ -27,6 +28,8 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<Home />} />
           <Route path="/players" element={<Players />} />
           <Route path="/saved-games" element={<SavedGames />} />
+          <Route path="/marker" element={<Marker />} />
+          <Route path="/marker/:id" element={<Marker />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </CSSTransition>

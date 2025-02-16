@@ -11,8 +11,15 @@ const sequelize = new Sequelize({
   database: process.env.DB_NAME || 'game_manager',
   logging: false,
   define: {
-    timestamps: true
+    timestamps: true,
+    underscored: true
   },
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  }
 });
 
 // Função para sincronizar os modelos com o banco de dados

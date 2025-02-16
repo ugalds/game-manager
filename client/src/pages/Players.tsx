@@ -30,6 +30,9 @@ const Players: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editFormData, setEditFormData] = useState({ name: '', avatar: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const avatarOptions = [
     '👤', '👩', '👨', '🧑', 
@@ -42,18 +45,32 @@ const Players: React.FC = () => {
     '🧛‍♂️', '🧜‍♀️', '🧜‍♂️', '🧝‍♀️'
   ];
 
-  useEffect(() => {
-    loadPlayers();
-  }, []);
-
-  const loadPlayers = async () => {
+  const fetchPlayers = async () => {
     try {
-      const response = await api.get('/api/players');
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/players');
       setPlayers(response.data);
+      setRetryCount(0); // Reseta o contador de tentativas quando sucesso
     } catch (error) {
       console.error('Erro ao carregar jogadores:', error);
+      setError(error instanceof Error ? error.message : 'Erro ao carregar jogadores');
+      
+      // Se ainda houver tentativas, tenta novamente após 2 segundos
+      if (retryCount < 3) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          fetchPlayers();
+        }, 2000);
+      }
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPlayers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,8 +91,8 @@ const Players: React.FC = () => {
         riscos: 0
       };
 
-      await api.post('/api/players', newPlayer);
-      await loadPlayers();
+      await api.post('/players', newPlayer);
+      await fetchPlayers();
       setFormData({ name: '', avatar: '👤' });
       setShowAddForm(false);
     } catch (error) {
@@ -110,8 +127,8 @@ const Players: React.FC = () => {
         return;
       }
 
-      await api.put(`/api/players/${selectedPlayer?.id}`, editFormData);
-      await loadPlayers();
+      await api.put(`/players/${selectedPlayer?.id}`, editFormData);
+      await fetchPlayers();
       setShowEditForm(false);
       setSelectedPlayer(prev => prev ? { ...prev, ...editFormData } : null);
     } catch (error) {
@@ -121,8 +138,8 @@ const Players: React.FC = () => {
 
   const handleDelete = async (playerId: number) => {
     try {
-      await api.delete(`/api/players/${playerId}`);
-      await loadPlayers();
+      await api.delete(`/players/${playerId}`);
+      await fetchPlayers();
       setSelectedPlayer(null);
       setShowDeleteConfirm(false);
     } catch (error) {
@@ -237,7 +254,21 @@ const Players: React.FC = () => {
               </div>
             </div>
             <div className="players-list">
-              {players.map((player, index) => (
+              {loading && <div className="loading">Carregando jogadores...</div>}
+              
+              {error && (
+                <div className="error-container">
+                  <p className="error-message">{error}</p>
+                  {retryCount < 3 && (
+                    <p className="retry-message">Tentando reconectar... ({retryCount + 1}/3)</p>
+                  )}
+                  <button onClick={fetchPlayers} className="retry-button">
+                    Tentar Novamente
+                  </button>
+                </div>
+              )}
+
+              {!loading && !error && players.map((player, index) => (
                 <div 
                   key={player.id} 
                   className="player-item"

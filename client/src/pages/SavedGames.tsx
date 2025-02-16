@@ -56,7 +56,7 @@ const SavedGames: React.FC = () => {
       setError(null);
       
       const response = await api.get('/matches');
-      const data = await response.data;
+      const data = response.data;
       
       // Garante que os dados dos jogadores estejam completos
       const matchesWithPlayers = data.map((match: Match) => ({
@@ -213,7 +213,7 @@ const SavedGames: React.FC = () => {
           {matches.length === 0 ? (
             <div className="empty-state">
               <p>Nenhum jogo salvo ainda</p>
-              <button onClick={() => navigate('/players')} className="start-game-button">
+              <button onClick={() => navigate('/marker')} className="start-game-button">
                 Iniciar Novo Jogo
               </button>
             </div>
@@ -286,7 +286,7 @@ const SavedGames: React.FC = () => {
 
         <button 
           className="fab"
-          onClick={() => navigate('/create-game')}
+          onClick={() => navigate('/marker')}
           title="Criar Novo Jogo"
         >
           +

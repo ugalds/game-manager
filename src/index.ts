@@ -24,6 +24,7 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
+// Middleware para parse do JSON
 app.use(express.json());
 
 // Rotas
@@ -158,4 +159,5 @@ process.on('SIGINT', async () => {
   }
 });
 
+// Inicia a aplicação
 initializeDatabase(); 
